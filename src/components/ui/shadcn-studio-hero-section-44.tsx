@@ -187,7 +187,7 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
   const j2 = useRef<LanyardRigidBody>(null!)
   const j3 = useRef<LanyardRigidBody>(null!)
   const j4 = useRef<LanyardRigidBody>(null!)
-  const j5 = useRef<RapierRigidBody>(null!)
+  const j5 = useRef<LanyardRigidBody>(null!)
   const card = useRef<RapierRigidBody>(null!)
 
   const vec = new THREE.Vector3()
@@ -275,6 +275,7 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
       new THREE.Vector3(),
       new THREE.Vector3(),
       new THREE.Vector3(),
+      new THREE.Vector3(),
       new THREE.Vector3()
     ])
 
@@ -284,6 +285,19 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
   })
 
   const [dragged, drag] = useState<THREE.Vector3 | false>(false)
+
+  useEffect(() => {
+    const handleGlobalPointerUp = () => {
+      drag(false)
+      if (typeof document !== 'undefined') {
+        document.body.style.userSelect = ''
+        document.body.style.cursor = 'auto'
+      }
+    }
+
+    window.addEventListener('pointerup', handleGlobalPointerUp)
+    return () => window.removeEventListener('pointerup', handleGlobalPointerUp)
+  }, [])
 
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 0.85])
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 0.85])
@@ -299,13 +313,14 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
     if (dragged) {
       vec.set(state.pointer.x, state.pointer.y, 0.5).unproject(state.camera)
       dir.copy(vec).sub(state.camera.position).normalize()
-      vec.add(dir.multiplyScalar(state.camera.position.length()))
+      const t = -state.camera.position.z / (dir.z || 0.0001)
+      vec.copy(state.camera.position).addScaledVector(dir, t)
       ;[card, j1, j2, j3, j4, j5, fixed].forEach(ref => ref.current?.wakeUp())
       card.current?.setNextKinematicTranslation({ x: vec.x - dragged.x, y: vec.y - dragged.y, z: vec.z - dragged.z })
     }
 
     if (fixed.current) {
-      ;[j1, j2, j3, j4].forEach(ref => {
+      ;[j1, j2, j3, j4, j5].forEach(ref => {
         const lerped = getLerped(ref.current)
         const clampedDistance = Math.max(0.1, Math.min(1, lerped.distanceTo(ref.current.translation())))
 
@@ -320,11 +335,12 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
         .set(0, CARD_ROPE_ANCHOR_Y + ROPE_TOP_EXTENSION, 0)
         .applyQuaternion(cardQuat)
         .add(vec.set(cardPos.x, cardPos.y, cardPos.z))
-      curve.points[1].copy(getLerped(j4.current))
-      curve.points[2].copy(getLerped(j3.current))
-      curve.points[3].copy(getLerped(j2.current))
-      curve.points[4].copy(getLerped(j1.current))
-      curve.points[5].copy(fixed.current.translation())
+      curve.points[1].copy(getLerped(j5.current))
+      curve.points[2].copy(getLerped(j4.current))
+      curve.points[3].copy(getLerped(j3.current))
+      curve.points[4].copy(getLerped(j2.current))
+      curve.points[5].copy(getLerped(j1.current))
+      curve.points[6].copy(fixed.current.translation())
 
       const oldRopeGeometry = rope.current.geometry
 
@@ -351,35 +367,55 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
           <cylinderGeometry args={[ROPE_RADIUS * 1.45, ROPE_RADIUS * 1.45, 0.24, 24]} />
           <meshStandardMaterial color="#27272a" metalness={0.7} roughness={0.3} />
         </mesh>
-        <RigidBody position={[0.35, 0, 0]} ref={j1} {...segmentProps}>
+        <RigidBody position={[0, -0.7, 0]} ref={j1} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[0.7, 0, 0]} ref={j2} {...segmentProps}>
+        <RigidBody position={[0, -1.4, 0]} ref={j2} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[1.05, 0, 0]} ref={j3} {...segmentProps}>
+        <RigidBody position={[0, -2.1, 0]} ref={j3} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[1.4, 0, 0]} ref={j4} {...segmentProps}>
+        <RigidBody position={[0, -2.8, 0]} ref={j4} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[1.75, 0, 0]} ref={j5} {...segmentProps}>
+        <RigidBody position={[0, -3.5, 0]} ref={j5} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[2.1, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
+        <RigidBody position={[0, -4.6, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
           <CuboidCollider args={[1.42, 2.0, 0.018]} />
           <group
             scale={4}
             position={[0, -3.16, -0.09]}
             onPointerUp={(e: ThreeEvent<PointerEvent>) => {
-              ;(e.target as Element).releasePointerCapture(e.pointerId)
+              try {
+                ;(e.target as any)?.releasePointerCapture?.(e.pointerId)
+              } catch {}
               drag(false)
-              document.body.style.userSelect = ''
+              if (typeof document !== 'undefined') {
+                document.body.style.userSelect = ''
+                document.body.style.cursor = 'auto'
+              }
             }}
             onPointerDown={(e: ThreeEvent<PointerEvent>) => {
-              ;(e.target as Element).setPointerCapture(e.pointerId)
+              try {
+                ;(e.target as any)?.setPointerCapture?.(e.pointerId)
+              } catch {}
               drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current!.translation())))
-              document.body.style.userSelect = 'none'
+              if (typeof document !== 'undefined') {
+                document.body.style.userSelect = 'none'
+                document.body.style.cursor = 'grabbing'
+              }
+            }}
+            onPointerOver={() => {
+              if (typeof document !== 'undefined') {
+                document.body.style.cursor = 'grab'
+              }
+            }}
+            onPointerOut={() => {
+              if (typeof document !== 'undefined' && !dragged) {
+                document.body.style.cursor = 'auto'
+              }
             }}
           >
             <mesh geometry={cardGeometry} position={[0, 0, 0.004]}>
@@ -424,24 +460,46 @@ const StudioLighting = () => (
 const REFERENCE_HEIGHT_PX = 520
 const CAMERA_Z = 20
 const CAMERA_FOV_DEG = 20
-const WORLD_UNITS_PER_PX = (2 * CAMERA_Z * Math.tan((CAMERA_FOV_DEG / 2) * (Math.PI / 180))) ** -1
-const PX_PER_WORLD_UNIT = REFERENCE_HEIGHT_PX * WORLD_UNITS_PER_PX
-const TARGET_FROM_RIGHT_FRACTION = 0.3
-const TARGET_FROM_RIGHT_FRACTION_AT_LG = 0.18
-const LG_BREAKPOINT_PX = 1024
-const XL_BREAKPOINT_PX = 1280
 
-const CameraAlign = () => {
+type CameraAlignProps = {
+  slotRef?: RefObject<HTMLDivElement | null>
+  containerRef?: RefObject<HTMLDivElement | null>
+}
+
+const CameraAlign = ({ slotRef, containerRef }: CameraAlignProps) => {
   useFrame(state => {
-    state.camera.position.x = 0
+    const currentCameraZ = CAMERA_Z * Math.max(1, state.size.height / REFERENCE_HEIGHT_PX)
     state.camera.position.y = 0.95
-    state.camera.position.z = CAMERA_Z * Math.max(1, state.size.height / REFERENCE_HEIGHT_PX)
+    state.camera.position.z = currentCameraZ
+
+    if (slotRef?.current && containerRef?.current) {
+      const slotRect = slotRef.current.getBoundingClientRect()
+      const containerRect = containerRef.current.getBoundingClientRect()
+
+      const slotCenterX = slotRect.left + slotRect.width / 2
+      const containerCenterX = containerRect.left + containerRect.width / 2
+      const offsetPx = slotCenterX - containerCenterX
+
+      const visibleWorldHeight = 2 * currentCameraZ * Math.tan((CAMERA_FOV_DEG / 2) * (Math.PI / 180))
+      const worldUnitsPerPixel = visibleWorldHeight / state.size.height
+
+      state.camera.position.x = -offsetPx * worldUnitsPerPixel
+    } else {
+      state.camera.position.x = 0
+    }
   })
 
   return null
 }
 
-const IdCard = ({ frontImage, className }: { frontImage: string; className?: string }) => {
+type IdCardProps = {
+  frontImage: string
+  className?: string
+  slotRef?: RefObject<HTMLDivElement | null>
+  containerRef?: RefObject<HTMLDivElement | null>
+}
+
+const IdCard = ({ frontImage, className, slotRef, containerRef }: IdCardProps) => {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
   const [contextLossKey, setContextLossKey] = useState(0)
   const eventSourceRef = useRef<HTMLElement | null>(typeof document !== 'undefined' ? document.body : null)
@@ -487,7 +545,7 @@ const IdCard = ({ frontImage, className }: { frontImage: string; className?: str
           })
         }}
       >
-        <CameraAlign />
+        <CameraAlign slotRef={slotRef} containerRef={containerRef} />
         <ambientLight intensity={Math.PI} />
         <Physics gravity={[0, -40, 0]} timeStep={isMobile ? 1 / 30 : 1 / 60}>
           <Band frontImage={frontImage} isMobile={isMobile} colors={colors} />
@@ -616,8 +674,24 @@ export const HeroSection44 = ({
   brandLogos = DEFAULT_BRAND_LOGOS,
   className
 }: HeroSection44Props) => {
+  const cardSlotRef = useRef<HTMLDivElement>(null)
+  const canvasWrapperRef = useRef<HTMLDivElement>(null)
+
   return (
     <div className={cn('bg-transparent text-foreground relative overflow-visible w-full', className)}>
+      {/* Full-width 3D Lanyard ID Card Canvas Overlay - covers entire screen width so card can be dragged freely without clipping */}
+      <div
+        ref={canvasWrapperRef}
+        className='hidden lg:block absolute inset-x-0 -top-12 xl:-top-16 2xl:-top-14 h-[680px] xl:h-[720px] 2xl:h-[760px] pointer-events-none z-30'
+      >
+        <IdCard
+          frontImage={profileImage}
+          className='w-full h-full'
+          slotRef={cardSlotRef}
+          containerRef={canvasWrapperRef}
+        />
+      </div>
+
       <div className='pt-8 pb-6 sm:py-10 lg:pt-10 lg:pb-8 2xl:pt-14 2xl:pb-10'>
         <div className='mx-auto w-full max-w-7xl 2xl:max-w-[1440px] 3xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 2xl:px-12 relative z-20'>
           <div className='grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 2xl:gap-14 items-center'>
@@ -669,13 +743,11 @@ export const HeroSection44 = ({
               </div>
             </div>
 
-            {/* Right Column: Hanging 3D Lanyard ID Card */}
-            <div className='hidden lg:flex lg:col-span-5 xl:col-span-5 2xl:col-span-5 relative h-[620px] lg:h-[680px] xl:h-[720px] 2xl:h-[760px] w-full items-center justify-center -mt-16 lg:-mt-22 xl:-mt-26 2xl:-mt-28'>
-              <IdCard
-                frontImage={profileImage}
-                className='w-full h-full'
-              />
-            </div>
+            {/* Right Column: Slot placeholder preserving layout & providing exact alignment coordinates */}
+            <div
+              ref={cardSlotRef}
+              className='hidden lg:flex lg:col-span-5 xl:col-span-5 2xl:col-span-5 relative h-[620px] lg:h-[680px] xl:h-[720px] 2xl:h-[760px] w-full items-center justify-center -mt-16 lg:-mt-22 xl:-mt-26 2xl:-mt-28 pointer-events-none'
+            />
 
           </div>
         </div>
