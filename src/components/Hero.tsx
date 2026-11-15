@@ -8,9 +8,9 @@ import { PERSONAL_INFO } from "@/lib/data";
 
 export function Hero() {
   return (
-    <section id="home" className="relative min-h-[100dvh] overflow-hidden pt-12 pb-8">
+    <section id="home" className="relative min-h-[100dvh] overflow-x-clip pt-12 lg:pt-16 2xl:pt-20 pb-8">
       {/* 3D Physics Lanyard ID Card Hero with Greeting Rotator & Tech Marquee */}
-      <div className="relative z-10">
+      <div className="relative z-10 w-full">
         <HeroSection44
           greetings={["Hello", "नमस्ते", "Hey", "Kem Cho"]}
           name={PERSONAL_INFO.name}
@@ -24,12 +24,12 @@ export function Hero() {
       </div>
 
       {/* Interactive Aceternity Macbook Scroll Workstation */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 overflow-hidden flex flex-col items-center justify-center -mt-10 sm:-mt-16">
+      <div className="relative z-10 w-full max-w-7xl 2xl:max-w-[1440px] 3xl:max-w-[1600px] mx-auto px-4 sm:px-6 flex flex-col items-center justify-center pt-20 sm:pt-28 lg:pt-36">
         <MacbookScroll
           title={
-            <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-100">
+            <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-extrabold tracking-tight text-zinc-100 leading-snug sm:leading-tight inline-block pt-1">
               Interactive Workstation. <br />
-              <span className="text-emerald-400 text-lg sm:text-xl font-medium">
+              <span className="text-emerald-400 text-sm sm:text-base md:text-lg lg:text-xl font-medium">
                 Scroll to unfold real production builds.
               </span>
             </span>

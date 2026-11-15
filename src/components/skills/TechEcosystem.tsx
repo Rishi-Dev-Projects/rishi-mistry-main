@@ -224,7 +224,7 @@ export function TechEcosystem() {
   const isToolsActive = TOOLS_TECHS.some((t) => t.id === hoveredId);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 my-16 sm:my-24">
+    <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 my-16 sm:my-24">
       {/* Ecosystem Outer Bezel Shell */}
       <div
         ref={containerRef}

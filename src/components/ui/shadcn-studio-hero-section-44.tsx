@@ -185,7 +185,9 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
   const fixed = useRef<RapierRigidBody>(null!)
   const j1 = useRef<LanyardRigidBody>(null!)
   const j2 = useRef<LanyardRigidBody>(null!)
-  const j3 = useRef<RapierRigidBody>(null!)
+  const j3 = useRef<LanyardRigidBody>(null!)
+  const j4 = useRef<LanyardRigidBody>(null!)
+  const j5 = useRef<RapierRigidBody>(null!)
   const card = useRef<RapierRigidBody>(null!)
 
   const vec = new THREE.Vector3()
@@ -271,6 +273,8 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
       new THREE.Vector3(),
       new THREE.Vector3(),
       new THREE.Vector3(),
+      new THREE.Vector3(),
+      new THREE.Vector3(),
       new THREE.Vector3()
     ])
 
@@ -284,7 +288,9 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 0.85])
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 0.85])
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 0.85])
-  useSphericalJoint(j3, card, [
+  useRopeJoint(j3, j4, [[0, 0, 0], [0, 0, 0], 0.85])
+  useRopeJoint(j4, j5, [[0, 0, 0], [0, 0, 0], 0.85])
+  useSphericalJoint(j5, card, [
     [0, 0, 0],
     [0, CARD_ROPE_ANCHOR_Y, 0]
   ])
@@ -294,12 +300,12 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
       vec.set(state.pointer.x, state.pointer.y, 0.5).unproject(state.camera)
       dir.copy(vec).sub(state.camera.position).normalize()
       vec.add(dir.multiplyScalar(state.camera.position.length()))
-      ;[card, j1, j2, j3, fixed].forEach(ref => ref.current?.wakeUp())
+      ;[card, j1, j2, j3, j4, j5, fixed].forEach(ref => ref.current?.wakeUp())
       card.current?.setNextKinematicTranslation({ x: vec.x - dragged.x, y: vec.y - dragged.y, z: vec.z - dragged.z })
     }
 
     if (fixed.current) {
-      ;[j1, j2].forEach(ref => {
+      ;[j1, j2, j3, j4].forEach(ref => {
         const lerped = getLerped(ref.current)
         const clampedDistance = Math.max(0.1, Math.min(1, lerped.distanceTo(ref.current.translation())))
 
@@ -314,15 +320,17 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
         .set(0, CARD_ROPE_ANCHOR_Y + ROPE_TOP_EXTENSION, 0)
         .applyQuaternion(cardQuat)
         .add(vec.set(cardPos.x, cardPos.y, cardPos.z))
-      curve.points[1].copy(getLerped(j2.current))
-      curve.points[2].copy(getLerped(j1.current))
-      curve.points[3].copy(fixed.current.translation())
+      curve.points[1].copy(getLerped(j4.current))
+      curve.points[2].copy(getLerped(j3.current))
+      curve.points[3].copy(getLerped(j2.current))
+      curve.points[4].copy(getLerped(j1.current))
+      curve.points[5].copy(fixed.current.translation())
 
       const oldRopeGeometry = rope.current.geometry
 
       rope.current.geometry = buildTaperedTubeGeometry(
         curve,
-        isMobile ? 16 : 32,
+        isMobile ? 20 : 40,
         ROPE_RADIUS,
         ROPE_RADIAL_SEGMENTS,
         ROPE_TAPER_FRACTION
@@ -337,18 +345,28 @@ const Band = ({ frontImage, isMobile, colors }: BandProps) => {
 
   return (
     <>
-      <group position={[0, 4, 0]}>
+      <group position={[0, 5.7, 0]}>
         <RigidBody ref={fixed} {...segmentProps} type='fixed' />
-        <RigidBody position={[0.425, 0, 0]} ref={j1} {...segmentProps}>
+        <mesh position={[0, 0, 0]}>
+          <cylinderGeometry args={[ROPE_RADIUS * 1.45, ROPE_RADIUS * 1.45, 0.24, 24]} />
+          <meshStandardMaterial color="#27272a" metalness={0.7} roughness={0.3} />
+        </mesh>
+        <RigidBody position={[0.35, 0, 0]} ref={j1} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[0.85, 0, 0]} ref={j2} {...segmentProps}>
+        <RigidBody position={[0.7, 0, 0]} ref={j2} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[1.275, 0, 0]} ref={j3} {...segmentProps}>
+        <RigidBody position={[1.05, 0, 0]} ref={j3} {...segmentProps}>
           <BallCollider args={[0.1]} />
         </RigidBody>
-        <RigidBody position={[1.7, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
+        <RigidBody position={[1.4, 0, 0]} ref={j4} {...segmentProps}>
+          <BallCollider args={[0.1]} />
+        </RigidBody>
+        <RigidBody position={[1.75, 0, 0]} ref={j5} {...segmentProps}>
+          <BallCollider args={[0.1]} />
+        </RigidBody>
+        <RigidBody position={[2.1, 0, 0]} ref={card} {...segmentProps} type={dragged ? 'kinematicPosition' : 'dynamic'}>
           <CuboidCollider args={[1.42, 2.0, 0.018]} />
           <group
             scale={4}
@@ -415,28 +433,9 @@ const XL_BREAKPOINT_PX = 1280
 
 const CameraAlign = () => {
   useFrame(state => {
-    if (state.size.width < LG_BREAKPOINT_PX) {
-      state.camera.position.x = 0
-      state.camera.position.z = CAMERA_Z * Math.max(1, state.size.height / REFERENCE_HEIGHT_PX)
-      return
-    }
-
-    const widthT = THREE.MathUtils.clamp(
-      (state.size.width - LG_BREAKPOINT_PX) / (XL_BREAKPOINT_PX - LG_BREAKPOINT_PX),
-      0,
-      1
-    )
-
-    const targetFromRightFraction = THREE.MathUtils.lerp(
-      TARGET_FROM_RIGHT_FRACTION_AT_LG,
-      TARGET_FROM_RIGHT_FRACTION,
-      widthT
-    )
-
-    const targetFromRightPx = targetFromRightFraction * state.size.width
-
-    state.camera.position.x = (targetFromRightPx - state.size.width / 2) / PX_PER_WORLD_UNIT
-    state.camera.position.z = CAMERA_Z * (state.size.height / REFERENCE_HEIGHT_PX)
+    state.camera.position.x = 0
+    state.camera.position.y = 0.95
+    state.camera.position.z = CAMERA_Z * Math.max(1, state.size.height / REFERENCE_HEIGHT_PX)
   })
 
   return null
@@ -618,68 +617,75 @@ export const HeroSection44 = ({
   className
 }: HeroSection44Props) => {
   return (
-    <div className={cn('bg-transparent text-foreground relative overflow-visible', className)}>
-      <div className='pt-12 pb-10 sm:py-16 lg:pt-16 lg:pb-14'>
-        <div className='mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 relative z-20'>
-          <div className='space-y-6 lg:max-w-xl'>
-            <span className='bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider'>
-              <span className='relative flex h-2 w-2' aria-hidden='true'>
-                <span className='bg-emerald-400 absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping' />
-                <span className='bg-emerald-500 relative inline-flex h-2 w-2 rounded-full' />
-              </span>
-              {availabilityLabel}
-            </span>
-
-            <h1 className='text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-zinc-100 leading-[1.1]'>
-              <GreetingWord greetings={greetings} />I am {name}
-            </h1>
-
-            <p className='text-emerald-400 text-xl font-semibold sm:text-2xl'>{role}</p>
-
-            <p className='text-zinc-400 text-base sm:text-lg leading-relaxed max-w-xl'>{description}</p>
-
-            <div className='flex items-center gap-3 pt-2'>
-              <a
-                href={downloadAction.href}
-                className={cn(
-                  'border border-white/[0.1] bg-white/[0.04] text-zinc-100 hover:bg-white/[0.08] inline-flex h-11 items-center justify-center rounded-full px-6 text-sm font-semibold whitespace-nowrap transition-all duration-300 active:scale-[0.98]',
-                  focusRing
-                )}
-              >
-                {downloadAction.label}
-              </a>
-
-              <a
-                href={connectAction.href}
-                className={cn(
-                  'bg-zinc-100 text-zinc-950 hover:bg-white group inline-flex h-11 items-center justify-center gap-2.5 rounded-full border border-transparent px-6 text-sm font-semibold whitespace-nowrap shadow-sm transition-all duration-300 hover:shadow-[0_0_24px_rgba(255,255,255,0.25)] active:scale-[0.98]',
-                  focusRing
-                )}
-              >
-                <span>{connectAction.label}</span>
-                <span className='bg-zinc-950 text-white relative flex w-6 h-6 items-center justify-center overflow-hidden rounded-full transition-all duration-300 group-hover:scale-105'>
-                  <ArrowRightIcon
-                    aria-hidden='true'
-                    className='text-white w-3.5 h-3.5'
-                  />
+    <div className={cn('bg-transparent text-foreground relative overflow-visible w-full', className)}>
+      <div className='pt-8 pb-6 sm:py-10 lg:pt-10 lg:pb-8 2xl:pt-14 2xl:pb-10'>
+        <div className='mx-auto w-full max-w-7xl 2xl:max-w-[1440px] 3xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 2xl:px-12 relative z-20'>
+          <div className='grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 2xl:gap-14 items-center'>
+            
+            {/* Left Column: Greeting, Name, Role, Bio, CTAs */}
+            <div className='lg:col-span-7 xl:col-span-7 2xl:col-span-7 space-y-5 sm:space-y-6 2xl:space-y-8'>
+              <span className='bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs 2xl:text-sm font-semibold uppercase tracking-wider'>
+                <span className='relative flex h-2 w-2' aria-hidden='true'>
+                  <span className='bg-emerald-400 absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping' />
+                  <span className='bg-emerald-500 relative inline-flex h-2 w-2 rounded-full' />
                 </span>
-              </a>
+                {availabilityLabel}
+              </span>
+
+              <h1 className='text-4xl sm:text-5xl lg:text-6xl 2xl:text-7xl font-extrabold tracking-tight text-zinc-100 leading-[1.08]'>
+                <GreetingWord greetings={greetings} />I am {name}
+              </h1>
+
+              <p className='text-emerald-400 text-xl font-semibold sm:text-2xl 2xl:text-3xl'>{role}</p>
+
+              <p className='text-zinc-400 text-base sm:text-lg 2xl:text-xl leading-relaxed max-w-xl 2xl:max-w-2xl'>{description}</p>
+
+              <div className='flex items-center gap-3 pt-2'>
+                <a
+                  href={downloadAction.href}
+                  className={cn(
+                    'border border-white/[0.1] bg-white/[0.04] text-zinc-100 hover:bg-white/[0.08] inline-flex h-11 2xl:h-12 items-center justify-center rounded-full px-6 2xl:px-8 text-sm 2xl:text-base font-semibold whitespace-nowrap transition-all duration-300 active:scale-[0.98]',
+                    focusRing
+                  )}
+                >
+                  {downloadAction.label}
+                </a>
+
+                <a
+                  href={connectAction.href}
+                  className={cn(
+                    'bg-zinc-100 text-zinc-950 hover:bg-white group inline-flex h-11 2xl:h-12 items-center justify-center gap-2.5 rounded-full border border-transparent px-6 2xl:px-8 text-sm 2xl:text-base font-semibold whitespace-nowrap shadow-sm transition-all duration-300 hover:shadow-[0_0_24px_rgba(255,255,255,0.25)] active:scale-[0.98]',
+                    focusRing
+                  )}
+                >
+                  <span>{connectAction.label}</span>
+                  <span className='bg-zinc-950 text-white relative flex w-6 h-6 items-center justify-center overflow-hidden rounded-full transition-all duration-300 group-hover:scale-105'>
+                    <ArrowRightIcon
+                      aria-hidden='true'
+                      className='text-white w-3.5 h-3.5'
+                    />
+                  </span>
+                </a>
+              </div>
             </div>
+
+            {/* Right Column: Hanging 3D Lanyard ID Card */}
+            <div className='hidden lg:flex lg:col-span-5 xl:col-span-5 2xl:col-span-5 relative h-[620px] lg:h-[680px] xl:h-[720px] 2xl:h-[760px] w-full items-center justify-center -mt-16 lg:-mt-22 xl:-mt-26 2xl:-mt-28'>
+              <IdCard
+                frontImage={profileImage}
+                className='w-full h-full'
+              />
+            </div>
+
           </div>
         </div>
       </div>
 
-      {/* Physics-driven Hanging ID Card with precise top and height */}
-      <IdCard
-        frontImage={profileImage}
-        className='max-lg:hidden lg:absolute lg:top-[-2.5rem] lg:right-0 lg:left-0 lg:z-10 lg:h-[620px] lg:w-full'
-      />
-
       {/* Tech Stack Marquee Footer */}
-      <div className='relative mx-auto mt-6 mb-8 w-full max-w-6xl'>
+      <div className='relative mx-auto mt-6 sm:mt-8 2xl:mt-12 mb-12 sm:mb-16 w-full max-w-7xl 2xl:max-w-[1440px] 3xl:max-w-[1600px]'>
         <div className='from-[#09090b] pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r to-transparent sm:w-36' />
         <div className='from-[#09090b] pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l to-transparent sm:w-36' />
-        <div className='mx-auto w-full max-w-6xl overflow-hidden'>
+        <div className='mx-auto w-full max-w-7xl 2xl:max-w-[1440px] 3xl:max-w-[1600px] overflow-hidden'>
           <LogoMarquee logos={brandLogos} />
         </div>
       </div>

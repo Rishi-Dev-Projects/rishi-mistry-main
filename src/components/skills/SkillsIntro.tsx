@@ -12,7 +12,7 @@ interface SkillsIntroProps {
 
 export function SkillsIntro({ headingRef, descRef, metaRef }: SkillsIntroProps) {
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 mb-16 sm:mb-20">
+    <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 mb-16 sm:mb-20">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-8 border-b border-white/[0.06]">
         
         {/* Left Column: Eyebrow + Masked Headline + Description */}

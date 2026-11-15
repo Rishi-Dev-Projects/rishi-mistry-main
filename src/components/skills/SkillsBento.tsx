@@ -40,7 +40,7 @@ export function SkillsBento() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 my-16 sm:my-20">
+    <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 my-16 sm:my-20">
       
       {/* Bento Grid Header */}
       <div className="mb-8 flex items-center justify-between">

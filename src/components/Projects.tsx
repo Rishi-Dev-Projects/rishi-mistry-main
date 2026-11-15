@@ -233,7 +233,7 @@ export function Projects() {
       {/* 1. SECTION INTRODUCTION */}
       <div
         ref={headerRef}
-        className="max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-12 sm:pt-32 sm:pb-16 relative z-10"
+        className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-12 sm:pt-32 sm:pb-16 relative z-10"
       >
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-white/[0.06]">
           {/* Left Title Column */}
@@ -289,7 +289,7 @@ export function Projects() {
         <div className="w-full h-full flex flex-col justify-center items-center px-4 sm:px-6">
           
           {/* Desktop Interactive Timeline Navigator */}
-          <div className="w-full max-w-6xl mb-6 flex items-center justify-between">
+          <div className="w-full max-w-6xl 2xl:max-w-7xl mb-6 flex items-center justify-between">
             {/* Project Quick Tabs */}
             <div className="flex items-center gap-2 p-1 rounded-full bg-zinc-950/80 border border-white/[0.08] backdrop-blur-md">
               {PROJECTS.map((proj, idx) => {
@@ -334,7 +334,7 @@ export function Projects() {
           {/* Cards Stage Container */}
           <div
             ref={cardsContainerRef}
-            className="relative w-full max-w-6xl h-[580px] sm:h-[610px] xl:h-[630px]"
+            className="relative w-full max-w-6xl 2xl:max-w-7xl h-[580px] sm:h-[610px] xl:h-[630px] 2xl:h-[660px]"
           >
             {PROJECTS.map((project, idx) => (
               <div

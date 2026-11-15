@@ -24,6 +24,44 @@ import { IconCommand } from "@tabler/icons-react";
 import { IconCaretLeftFilled } from "@tabler/icons-react";
 import { IconCaretDownFilled } from "@tabler/icons-react";
 
+export const Lid = ({
+  rotate,
+  src,
+}: {
+  rotate: MotionValue<number>;
+  src?: string;
+}) => {
+  return (
+    <div className="relative [perspective:1000px] [transform-style:preserve-3d]">
+      {/* Authentic Unfolding Display Screen (Hinged at bottom) */}
+      <motion.div
+        style={{
+          rotateX: rotate,
+          transformOrigin: "bottom",
+          transformStyle: "preserve-3d",
+        }}
+        className="relative h-80 sm:h-96 w-[32rem] rounded-t-2xl rounded-b-sm bg-[#09090b] p-2.5 border-t border-x border-zinc-700/80 shadow-[0_24px_50px_rgba(0,0,0,0.85)] z-20"
+      >
+        {/* Top Bezel with Camera Dot */}
+        <div className="absolute top-1.5 inset-x-0 flex items-center justify-center z-30">
+          <div className="h-1.5 w-1.5 rounded-full bg-zinc-800 border border-zinc-700 shadow-inner" />
+        </div>
+
+        {/* Display Frame */}
+        <div className="relative h-full w-full rounded-lg bg-zinc-950 border border-white/[0.08] overflow-hidden shadow-inner">
+          <img
+            src={src as string}
+            alt="Interactive Workstation build"
+            className="h-full w-full rounded-lg object-cover object-top"
+          />
+          {/* Subtle Screen Reflection Glare */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/[0.04] via-transparent to-transparent" />
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 export const MacbookScroll = ({
   src,
   showGradient,
@@ -38,138 +76,103 @@ export const MacbookScroll = ({
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ["start start", "end start"],
+    offset: ["start start", "end end"],
   });
 
-  const [isMobile, setIsMobile] = useState(false);
+  // Smooth scroll-driven 3D unfold transforms
+  // Rotate lid from closed/angled (-28deg) to fully open upright (0deg)
+  const rotate = useTransform(scrollYProgress, [0.04, 0.1, 0.42], [-28, -28, 0]);
+  
+  // Title fade and slight upward float as scroll begins
+  const textTransform = useTransform(scrollYProgress, [0, 0.22], [0, -25]);
+  const textOpacity = useTransform(scrollYProgress, [0, 0.18], [1, 0]);
 
-  useEffect(() => {
-    if (window && window.innerWidth < 768) {
-      setIsMobile(true);
-    }
-  }, []);
-
-  const scaleX = useTransform(
-    scrollYProgress,
-    [0, 0.3],
-    [1.2, isMobile ? 1 : 1.5],
-  );
-  const scaleY = useTransform(
-    scrollYProgress,
-    [0, 0.3],
-    [0.6, isMobile ? 1 : 1.5],
-  );
-  const translate = useTransform(scrollYProgress, [0, 1], [0, 1500]);
-  const rotate = useTransform(scrollYProgress, [0.1, 0.12, 0.3], [-28, -28, 0]);
-  const textTransform = useTransform(scrollYProgress, [0, 0.3], [0, 100]);
-  const textOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  // Subtle zoom-in after unfolding for cinematic immersion
+  const workstationZoom = useTransform(scrollYProgress, [0.42, 0.85], [1, 1.06]);
 
   return (
     <div
       ref={ref}
-      className="flex min-h-[200vh] shrink-0 scale-[0.35] transform flex-col items-center justify-start py-0 [perspective:800px] sm:scale-50 md:scale-100 md:py-80"
+      className="relative min-h-[165vh] sm:min-h-[185vh] md:min-h-[200vh] w-full"
     >
-      <motion.h2
-        style={{
-          translateY: textTransform,
-          opacity: textOpacity,
-        }}
-        className="mb-20 text-center text-3xl font-bold text-neutral-800 dark:text-white"
-      >
-        {title || (
-          <span>
-            This Macbook is built with Tailwindcss. <br /> No kidding.
-          </span>
-        )}
-      </motion.h2>
-      {/* Lid */}
-      <Lid
-        src={src}
-        scaleX={scaleX}
-        scaleY={scaleY}
-        rotate={rotate}
-        translate={translate}
-      />
-      {/* Base area */}
-      <div className="relative -z-10 h-[22rem] w-[32rem] overflow-hidden rounded-2xl bg-gray-200 dark:bg-[#272729]">
-        {/* above keyboard bar */}
-        <div className="relative h-10 w-full">
-          <div className="absolute inset-x-0 mx-auto h-4 w-[80%] bg-[#050505]" />
-        </div>
-        <div className="relative flex">
-          <div className="mx-auto h-full w-[10%] overflow-hidden">
-            <SpeakerGrid />
-          </div>
-          <div className="mx-auto h-full w-[80%]">
-            <Keypad />
-          </div>
-          <div className="mx-auto h-full w-[10%] overflow-hidden">
-            <SpeakerGrid />
-          </div>
-        </div>
-        <Trackpad />
-        <div className="absolute inset-x-0 bottom-0 mx-auto h-2 w-20 rounded-tl-3xl rounded-tr-3xl bg-gradient-to-t from-[#272729] to-[#050505]" />
-        {showGradient && (
-          <div className="absolute inset-x-0 bottom-0 z-50 h-40 w-full bg-gradient-to-t from-white via-white to-transparent dark:from-black dark:via-black"></div>
-        )}
-        {badge && <div className="absolute bottom-4 left-4">{badge}</div>}
-      </div>
-    </div>
-  );
-};
-
-export const Lid = ({
-  scaleX,
-  scaleY,
-  rotate,
-  translate,
-  src,
-}: {
-  scaleX: MotionValue<number>;
-  scaleY: MotionValue<number>;
-  rotate: MotionValue<number>;
-  translate: MotionValue<number>;
-  src?: string;
-}) => {
-  return (
-    <div className="relative [perspective:800px]">
-      <div
-        style={{
-          transform: "perspective(800px) rotateX(-25deg) translateZ(0px)",
-          transformOrigin: "bottom",
-          transformStyle: "preserve-3d",
-        }}
-        className="relative h-[12rem] w-[32rem] rounded-2xl bg-[#010101] p-2"
-      >
-        <div
+      {/* Sticky viewport stage: stays pinned during the scroll-driven unfold animation */}
+      <div className="sticky top-0 h-[100dvh] w-full flex flex-col items-center justify-center overflow-x-clip px-2 sm:px-4 pt-16 sm:pt-20 md:pt-14 pb-4">
+        
+        {/* Title header */}
+        <motion.div
           style={{
-            boxShadow: "0px 2px 0px 2px #171717 inset",
+            translateY: textTransform,
+            opacity: textOpacity,
           }}
-          className="absolute inset-0 flex items-center justify-center rounded-lg bg-[#010101]"
+          className="mb-2 sm:mb-5 md:mb-8 text-center px-4 max-w-2xl shrink-0"
         >
-          <span className="text-white">
-            <AceternityLogo />
-          </span>
+          {title || (
+            <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-extrabold tracking-tight text-zinc-100 leading-tight">
+              Interactive Workstation. <br />
+              <span className="text-emerald-400 text-sm sm:text-base md:text-lg lg:text-xl font-medium">
+                Scroll to unfold real production builds.
+              </span>
+            </span>
+          )}
+        </motion.div>
+
+        {/* Responsive Scale Container (Explicit layout height matching scaled device to prevent flex vertical overflow clipping) */}
+        <div className="relative w-full max-w-[32rem] h-[380px] sm:h-[510px] md:h-[680px] flex items-center justify-center shrink-0">
+          <div className="flex flex-col items-center origin-center transition-transform scale-[0.58] sm:scale-[0.80] md:scale-95 lg:scale-100 2xl:scale-110 [perspective:1000px] shrink-0">
+            {/* Framer Motion zoom container */}
+            <motion.div
+              style={{
+                scale: workstationZoom,
+              }}
+              className="flex flex-col items-center origin-center"
+            >
+              {/* Authentic Screen Lid with 3D Hinge Transform */}
+              <Lid
+                src={src}
+                rotate={rotate}
+              />
+
+              {/* Authentic Hinge Bar */}
+              <div className="relative h-2 w-[82%] bg-gradient-to-b from-[#18181b] via-[#111113] to-[#09090b] border-x border-zinc-800 z-10 -mt-px shadow-sm" />
+
+              {/* Authentic Aceternity Space Gray Aluminum Keyboard Base Deck */}
+              <div className="relative -mt-px h-[20rem] sm:h-[22rem] w-[32rem] overflow-hidden rounded-b-2xl bg-gradient-to-b from-[#24242a] via-[#1e1e24] to-[#141418] border-x border-b border-zinc-700/60 shadow-[0_25px_60px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.18)]">
+                {/* Above keyboard bar */}
+                <div className="relative h-8 sm:h-10 w-full">
+                  <div className="absolute inset-x-0 mx-auto h-3.5 sm:h-4 w-[80%] bg-[#050505] rounded-b-sm" />
+                </div>
+
+                {/* Speakers + Keypad Row */}
+                <div className="relative flex px-1">
+                  <div className="mx-auto h-full w-[10%] overflow-hidden">
+                    <SpeakerGrid />
+                  </div>
+                  <div className="mx-auto h-full w-[80%]">
+                    <Keypad />
+                  </div>
+                  <div className="mx-auto h-full w-[10%] overflow-hidden">
+                    <SpeakerGrid />
+                  </div>
+                </div>
+
+                {/* Authentic Trackpad */}
+                <Trackpad />
+
+                {/* Bottom Thumb Notch */}
+                <div className="absolute inset-x-0 bottom-0 mx-auto h-2 w-20 rounded-tl-3xl rounded-tr-3xl bg-gradient-to-t from-[#24242a] to-[#050505]" />
+
+                {/* Optional gradient overlay */}
+                {showGradient && (
+                  <div className="absolute inset-x-0 bottom-0 z-50 h-40 w-full bg-gradient-to-t from-white via-white to-transparent dark:from-black dark:via-black" />
+                )}
+
+                {/* GitHub Badge on Base Deck */}
+                {badge && <div className="absolute bottom-4 left-4 z-20">{badge}</div>}
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
-      <motion.div
-        style={{
-          scaleX: scaleX,
-          scaleY: scaleY,
-          rotateX: rotate,
-          translateY: translate,
-          transformStyle: "preserve-3d",
-          transformOrigin: "top",
-        }}
-        className="absolute inset-0 h-96 w-[32rem] rounded-2xl bg-[#010101] p-2"
-      >
-        <div className="absolute inset-0 rounded-lg bg-[#272729]" />
-        <img
-          src={src as string}
-          alt="aceternity logo"
-          className="absolute inset-0 h-full w-full rounded-lg object-cover object-left-top"
-        />
-      </motion.div>
     </div>
   );
 };

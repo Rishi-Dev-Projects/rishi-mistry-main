@@ -47,7 +47,7 @@ const ROADMAP_ICONS = [
 export function About() {
   return (
     <section id="about" className="py-24 sm:py-32 relative">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6">
         {/* Section Header */}
         <div className="max-w-2xl mb-12 sm:mb-16">
           <Eyebrow>About Me</Eyebrow>
